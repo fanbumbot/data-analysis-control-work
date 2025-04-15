@@ -1,18 +1,18 @@
 from pandas import Series
 
-from ...intermediary_vars import IntermediaryVariables
+from ...intermediary_results import IntermediaryResults
 
-def get_iqr_vars(series: Series, normalize: bool):
-    vars = IntermediaryVariables(
+def get_iqr_results(series: Series, normalize: bool):
+    vars = IntermediaryResults(
         q1 = series.quantile(0.25),
         q3 = series.quantile(0.75)
     )
 
-    vars += IntermediaryVariables(
+    vars += IntermediaryResults(
         iqr = vars.q3 - vars.q1
     )
 
-    vars += IntermediaryVariables(
+    vars += IntermediaryResults(
         left_bound = vars.q1 - 1.5 * vars.iqr,
         right_bound = vars.q3 + 1.5 * vars.iqr
     )

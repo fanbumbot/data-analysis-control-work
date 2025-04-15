@@ -1,18 +1,18 @@
 from pandas import Series
 
-from ...intermediary_vars import IntermediaryVariables
+from ...intermediary_results import IntermediaryResults
 
-def get_three_sigma_vars(series: Series, normalize: bool):
-    vars = IntermediaryVariables(
+def get_three_sigma_results(series: Series, normalize: bool):
+    vars = IntermediaryResults(
         std = series.std(),
         mean = series.mean()
     )
 
-    vars += IntermediaryVariables(
+    vars += IntermediaryResults(
         three_sigma = vars.std * 3
     )
 
-    vars += IntermediaryVariables(
+    vars += IntermediaryResults(
         left_bound = vars.mean-vars.three_sigma,
         right_bound = vars.mean+vars.three_sigma,
     )

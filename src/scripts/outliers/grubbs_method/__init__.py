@@ -1,8 +1,8 @@
 from pandas import Series
 
-from .vars import get_grubbs_vars
+from .results import get_grubbs_results
 
-from ...intermediary_vars import IntermediaryVariables
+from ...intermediary_results import IntermediaryResults
 
 def get_outliers_grubbs(series: Series, alpha: float):
     all_vars = list()
@@ -11,7 +11,7 @@ def get_outliers_grubbs(series: Series, alpha: float):
     outliers = list()
 
     while True:
-        vars = get_grubbs_vars(series_without_outliers, alpha)
+        vars = get_grubbs_results(series_without_outliers, alpha)
         all_vars.append(vars)
         
         if vars.is_max_outliers and vars.is_min_outliers:
