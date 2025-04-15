@@ -1,5 +1,4 @@
-
-class IntermediaryVariables(dict):
+class IntermediaryResults(dict):
     def __getattr__(self, key):
         return self.get(key)
     
@@ -10,7 +9,7 @@ class IntermediaryVariables(dict):
         del self[key]
 
     def __iadd__(self, other):
-        if isinstance(other, dict) or isinstance(other, "IntermediaryVariables"):
+        if isinstance(other, dict) or isinstance(other, "IntermediaryResults"):
             for key, value in other.items():
                 self[key] = value
             return self
