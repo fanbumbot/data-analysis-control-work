@@ -35,7 +35,7 @@ def get_interval_count_results(size: int, round_result: bool = True):
     )
 
     if round_result:
-        vars.interval_count = math.ceil(vars.interval_count)
+        vars.interval_count = math.floor(vars.interval_count)
 
     return vars
 
@@ -57,7 +57,7 @@ def slice_series_by_intervals_raw(series: Series):
         size = series.size
     )
     
-    vars += get_interval_count_results(vars.size)
+    vars += get_interval_count_results(vars.size, True)
     vars += get_interval_distance_by_count(vars.max, vars.min, vars.interval_count)
 
     series_by_intervals = SeriesByIntervals()
@@ -75,7 +75,7 @@ def slice_series_by_intervals_raw(series: Series):
         next += vars.interval_distance
 
     # Добавляем максимальное значение
-    all_values_in_interval = concat((series_by_intervals[interval], series[series >= next]))
+    all_values_in_interval = concat((series_by_intervals[interval], series[series >= current]))
     series_by_intervals[interval] = all_values_in_interval
     series_by_intervals.move_to_end(interval)
 
