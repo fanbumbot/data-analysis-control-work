@@ -2,6 +2,10 @@ from pandas import DataFrame, read_excel
 
 from .outliers import get_outliers_three_sigma
 
+from .common_values import get_common_values
+
+from .intervals import slice_series_by_intervals, optimize_intervals
+
 TASK1 = "КР Задание 1 в работу.xlsx"
 TASK2 = "КР Задание 2 в работу.xlsx"
 
@@ -16,6 +20,19 @@ series = task1_dataset['Y']
 
 print('\n')
 
-outliers, all_vars = get_outliers_three_sigma(series, DEFAULT_ALPHA)
+#outliers, all_vars = get_outliers_three_sigma(series, DEFAULT_ALPHA)
 
-print(outliers)
+#vals = get_common_values(series)
+
+#print(vals)
+#print(outliers)
+
+#a = slice_series_by_intervals(series)
+#print(a)
+
+#from .pearson_chi_square_test import get_chi_square_critical
+#print(get_chi_square_critical(DEFAULT_ALPHA))
+
+from .pearson_chi_square_test import get_pearson_test_results
+
+print(get_pearson_test_results(series, DEFAULT_ALPHA))
