@@ -40,8 +40,22 @@ from .pearson_chi_square_test import get_pearson_test_results
 #vars = get_pearson_test_results(series, DEFAULT_ALPHA)
 
 #print(vars)
+"""
+from .cluster.kmeans import compute_most_successful_clusters
+import scipy.cluster
 
-import numpy as np
+data = scipy.cluster.vq.whiten(task1_dataset)
+
+ans = compute_most_successful_clusters(data, 2, 20, 1)
+
+scores = [arr[1] for arr in ans]
+print(ans)
+
+plt.plot(list(range(2, 21)), scores)
+#plt.plot(list(iterator), wcss)
+plt.show()"""
+
+"""import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
 
@@ -65,7 +79,7 @@ for i in iterator:
 
 plt.plot(list(iterator), scores)
 #plt.plot(list(iterator), wcss)
-plt.show()
+plt.show()"""
 
 """
 plt.scatter(data[:, 0], data[:, 4], c=labels, s=50, cmap='viridis')
@@ -76,3 +90,32 @@ plt.ylabel("Признак 2")
 plt.legend()
 plt.show()
 """
+
+"""
+from .outliers import get_outliers_grubbs, get_outliers_iqr, get_outliers_three_sigma
+
+def a(series):
+    outliers1, _, _ = get_outliers_grubbs(series, DEFAULT_ALPHA)
+    outliers2, _ = get_outliers_iqr(series, True)
+    outliers3, _ = get_outliers_three_sigma(series, True)
+
+    print(outliers1)
+    print(outliers2)
+    print(outliers3)
+
+print("X1:")
+a(task1_dataset['X1'])
+print("X2:")
+a(task1_dataset['X2'])
+print("X3:")
+a(task1_dataset['X3'])
+print("X4:")
+a(task1_dataset['X4'])
+print("Y:")
+a(task1_dataset['Y'])"""
+
+from .randomness.medians_method import get_medians_method_results
+
+vars = get_medians_method_results(task1_dataset['X1'])
+
+print(vars.is_random_series)
