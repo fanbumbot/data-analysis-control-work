@@ -17,37 +17,39 @@ def get_medians_method_results(series: Series):
         b_crit = math.floor(3.3 * math.log(vars.size) + 1)
     )
 
-    a = 0
-    b = 0
+    total_sign_series = 1
+    max_sign_series_size = 0
 
-    current_series_size = 0
+    current_sign_series_size = 0
 
-    is_greater_than_median_arr = list()
+    signs_arr = list()
 
-    is_last_greater_than_median = None
+    last_sign = series.loc[0] - median
     for value in series:
-        if value == median:
-            is_greater_than_median_arr.append(None)
+        sign = value - median
+        signs_arr.append(sign)
+        if sign == 0:
             continue
-        is_greater_than_median = value > median
-        is_greater_than_median_arr.append(is_greater_than_median)
 
-        if ((is_last_greater_than_median == None) or
-            (is_last_greater_than_median and not is_greater_than_median) or
-            (not is_last_greater_than_median and is_greater_than_median)
+        if ((last_sign == 0) or
+            (last_sign > 0 and sign < 0) or
+            (last_sign < 0 and sign > 0)
         ):
-            a += 1
-            b = max(b, current_series_size)
-            current_series_size = 0
+            total_sign_series += 1
+            max_sign_series_size = max(max_sign_series_size, current_sign_series_size)
+            current_sign_series_size = 0
+
+        last_sign = sign
+        current_sign_series_size += 1
 
     vars += IntermediaryResults(
-        is_greater_than_median_arr = is_greater_than_median_arr,
-        a = a,
-        b = b
+        signs_arr = signs_arr,
+        total_sign_series = total_sign_series,
+        max_sign_series_size = max_sign_series_size
     )
 
     vars += IntermediaryResults(
-        is_random_series = vars.a > vars.a_crit and vars.b < vars.b_crit
+        is_random_series = vars.total_sign_series > vars.a_crit and vars.max_sign_series_size < vars.b_crit
     )
 
     return vars

@@ -115,7 +115,9 @@ print("Y:")
 a(task1_dataset['Y'])"""
 
 from .randomness.medians_method import get_medians_method_results
+from pandas import Series
 
-vars = get_medians_method_results(task1_dataset['X1'])
+vars = get_medians_method_results(task1_dataset['Y'])
 
+print(vars)
 print(vars.is_random_series)
