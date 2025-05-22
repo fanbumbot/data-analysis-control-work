@@ -9,7 +9,10 @@ class IntermediaryResults(dict):
         del self[key]
 
     def __iadd__(self, other):
-        if isinstance(other, dict) or isinstance(other, "IntermediaryResults"):
+        if isinstance(other, dict) or isinstance(other, IntermediaryResults):
             for key, value in other.items():
                 self[key] = value
             return self
+            
+    def __repr__(self):
+        return f"IntermediaryResults({dict(self)})"

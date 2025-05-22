@@ -1,12 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
-from sklearn.metrics import silhouette_score
+from sklearn.metrics import silhouette_score, silhouette_samples
 
 from ..intermediary_results import IntermediaryResults
 
 def apply_kmeans(data, clusters_count: int):
-    kmeans = KMeans(n_clusters=clusters_count)
+    kmeans = KMeans(n_clusters=clusters_count, random_state=42)
     kmeans.fit(data)
     return kmeans
 
@@ -28,7 +28,7 @@ def compute_most_successful_clusters_by_count(data, clusters_count: int, iterati
     most_successful_wcss = 0
     for i in range(iterations):
         kmeans, wcss, silhouette_score = compute_kmeans_and_score(data, clusters_count)
-        if silhouette_score > most_successful_silhouette_score:
+        if wcss > most_successful_wcss and silhouette_score > most_successful_silhouette_score:
             most_successful_kmeans = kmeans
             most_successful_wcss = wcss
             most_successful_silhouette_score = silhouette_score
