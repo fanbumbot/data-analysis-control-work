@@ -44,12 +44,12 @@ def get_medians_method_results(series: Series):
 
     vars += IntermediaryResults(
         signs_arr = signs_arr,
-        total_sign_series = total_sign_series,
-        max_sign_series_size = max_sign_series_size
+        a = total_sign_series,
+        b = max_sign_series_size
     )
 
     vars += IntermediaryResults(
-        is_random_series = vars.total_sign_series > vars.a_crit and vars.max_sign_series_size < vars.b_crit
+        is_random_series = vars.a > vars.a_crit and vars.b < vars.b_crit
     )
 
     return vars
