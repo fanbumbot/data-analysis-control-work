@@ -24,7 +24,7 @@ def get_medians_method_results(series: Series):
 
     signs_arr = list()
 
-    last_sign = series.loc[0] - median
+    last_sign = series.iloc[0] - median
     for value in series:
         sign = value - median
         signs_arr.append(sign)
