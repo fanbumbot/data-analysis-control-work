@@ -31,18 +31,21 @@ def remove_outliers(series: Series, alpha: float):
             all_replacements += 1
         elif is_min_outlier:
             data.loc[idx_min] = value_for_replace
-            all_replacements += 1"""
-
+            all_replacements += 1
+        """
+        """        
         iqr_results = get_iqr_results(data, True)
         outliers = data[(data < iqr_results.left_bound) | (data > iqr_results.right_bound)]
         all_replacements += len(outliers)
         data[(data < iqr_results.left_bound) | (data > iqr_results.right_bound)] = value_for_replace
         """
+        
+        
         three_sigma_results = get_three_sigma_results(data, True)
         outliers = data[(data < three_sigma_results.left_bound) | (data > three_sigma_results.right_bound)]
         all_replacements += len(outliers)
         data[(data < three_sigma_results.left_bound) | (data > three_sigma_results.right_bound)] = value_for_replace
-        """
+        
         if last_replacements == all_replacements:
             break
 
