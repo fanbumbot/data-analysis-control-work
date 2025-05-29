@@ -35,6 +35,9 @@ task1_dataset['X1'] = task1_dataset['X1'].apply(lambda x: math.log(x+1))
 task1_dataset['X5'] = task1_dataset['X5'].apply(lambda x: math.sqrt(x))
 task1_dataset['Y'] = task1_dataset['Y'].apply(lambda x: math.log(x+1))
 
+task1_dataset.hist()
+plt.show()
+
 from .outliers import remove_outliers
 
 from scipy.stats import normaltest
@@ -71,7 +74,7 @@ task1_dataset_standard['X4'] = task1_dataset_standard['X4'].apply(standard_func)
 task1_dataset_standard['X5'] = task1_dataset_standard['X5'].apply(standard_func)
 task1_dataset_standard['Y'] = task1_dataset_standard['Y'].apply(standard_func)
 """
-n_clusters = 2
+n_clusters = 3
 
 #--------------------------------------------------------
 #scores = list()
@@ -95,6 +98,7 @@ task1_dataset['labels'] = labels
 clusters = list()
 for i in range(n_clusters):
     cluster = task1_dataset[task1_dataset['labels'] == i]
+    cluster = cluster.drop('labels', axis=1)
     clusters.append(cluster)
 
 x1 = task1_dataset['X2']
@@ -135,7 +139,7 @@ from scipy.stats import median_test
 for factor in ['X1', 'X2', 'X3', 'X4', 'X5', 'Y']:
     stat, p, med, tbl = median_test(*[clusters[i][factor] for i in range(len(clusters))])
     print(f"Неоднородность {factor}: {p < DEFAULT_ALPHA}")
-
+"""
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import classification_report, confusion_matrix
@@ -169,7 +173,82 @@ plt.title('Матрица ошибок KNN-классификатора')
 plt.xlabel('Предсказанный кластер')
 plt.ylabel('Истинный кластер')
 plt.tight_layout()
-plt.show()
+plt.show()"""
+
+import scipy
+import scipy.stats
+
+# Кластер для оценки
+cluster = clusters[1]
+cluster_size = cluster.size
+
+cor_matrix = cluster.corr()
+d_matrix = cor_matrix.apply(lambda x: x**2)
+f_crit = scipy.stats.f.ppf(1-DEFAULT_ALPHA, 1, cluster_size-2)
+f_exp_matrix = d_matrix.apply(lambda x: (x/(1-x)) * (cluster_size-2))
+significance_matrix = f_exp_matrix.apply(lambda x: x > f_crit)
+
+print(cor_matrix)
+print(d_matrix)
+print(f_exp_matrix)
+print(significance_matrix)
+
+# Пусть cluster — твой DataFrame, y_col — имя зависимой переменной
+y_col = 'Y'
+X_cols = [col for col in cluster.columns if col != y_col]
+
+# Извлекаем данные как массивы
+X = cluster[X_cols].values
+y = cluster[y_col].values.reshape(-1, 1)  # превращаем в столбец-матрицу
+
+# Добавляем константу (столбец единиц) для интерсепта
+ones = np.ones((X.shape[0], 1))
+X = np.hstack([ones, X])  # финальная X: [1 x1 x2 ...]
+
+# Шаги по формуле МНК:
+Xt = X.T                     # X^T
+XtX = Xt @ X                 # X^T * X
+XtX_inv = np.linalg.inv(XtX)  # (X^T * X)^(-1)
+Xty = Xt @ y                 # X^T * y
+
+beta_hat = XtX_inv @ Xty     # финальные коэффициенты
+
+# Вывод
+print("Оценённые коэффициенты (включая интерсепт):")
+print(beta_hat)
+
+
+from sklearn.metrics import r2_score
+from sklearn.metrics import mean_absolute_error
+
+# Предсказания: y_pred = X @ beta_hat
+y_pred = X @ beta_hat  # (n_samples, 1)
+
+# Плоские векторы для метрик (иначе ошибки)
+y_true = y.ravel()
+y_pred_flat = y_pred.ravel()
+
+# R² и MAE:
+r2 = r2_score(y_true, y_pred_flat)
+mae = mean_absolute_error(y_true, y_pred_flat)
+
+print(f"R^2: {r2:.4f}")
+print(f"D^2: {r2**2:.4f}")
+print(f"Mean Absolute Error: {mae:.4f}")
+
+import pingouin as pg
+
+print("Частные коэффициенты корреляции")
+print(pg.pcorr(cluster))
+
+n = X.shape[0]         # количество наблюдений
+p = X.shape[1] - 1     # количество признаков (без интерсепта)
+
+r_adj = d_matrix.apply(lambda x: ((1 - x) * (n - 1)) / (n - p - 1))
+
+print(f"Скорректированный R^2:")
+print(r_adj)
+
 
 #outliers, all_vars = get_outliers_three_sigma(series, DEFAULT_ALPHA)
 
