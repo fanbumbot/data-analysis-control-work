@@ -35,6 +35,9 @@ task1_dataset['X1'] = task1_dataset['X1'].apply(lambda x: math.log(x+1))
 task1_dataset['X5'] = task1_dataset['X5'].apply(lambda x: math.sqrt(x))
 task1_dataset['Y'] = task1_dataset['Y'].apply(lambda x: math.log(x+1))
 
+task1_dataset.hist()
+plt.show()
+
 from .outliers import remove_outliers
 
 from scipy.stats import normaltest
@@ -51,6 +54,24 @@ task1_dataset['X5'], total_replacements = remove_outliers(task1_dataset['X5'], D
 print(total_replacements)
 task1_dataset['Y'], total_replacements = remove_outliers(task1_dataset['Y'], DEFAULT_ALPHA)
 print(total_replacements)
+
+
+from .append_tests import sign_test, wilcoxon_test, median_random_test, is_normal_dagostino
+
+def test_all(selection):
+    factors = ['X1', 'X2', 'X3', 'X4', 'X5', 'Y']
+    for factor in factors:
+        print(f"{factor} случаен? : {median_random_test(selection[factor])}")
+
+    for factor in factors:
+        print(f"У {factor} нормальное распределение? : {is_normal_dagostino(selection[factor])}")
+
+    for i in range(len(factors)):
+        for j in range(i+1, len(factors)):
+            print(f"{factors[i]} - {factors[j]} однородно (критерий знаков)? : {sign_test(selection[factors[i]], selection[factors[j]])}")
+            print(f"{factors[i]} - {factors[j]} однородно (Вилкоксон)? : {wilcoxon_test(selection[factors[i]], selection[factors[j]])}")
+
+test_all(task1_dataset)
 
 from sklearn.cluster import KMeans, AgglomerativeClustering
 from sklearn.metrics import silhouette_score
@@ -71,12 +92,13 @@ task1_dataset_standard['X4'] = task1_dataset_standard['X4'].apply(standard_func)
 task1_dataset_standard['X5'] = task1_dataset_standard['X5'].apply(standard_func)
 task1_dataset_standard['Y'] = task1_dataset_standard['Y'].apply(standard_func)
 """
-n_clusters = 2
+n_clusters = 3
 
 #--------------------------------------------------------
 #scores = list()
 #for i in range(2, 10):
-kmeans = KMeans(n_clusters=n_clusters, random_state=42)
+
+kmeans = KMeans(n_clusters=n_clusters, random_state=42)#metric='euclidean', linkage='single')#, random_state=42)
 kmeans.fit(task1_dataset_standard)
 labels = kmeans.labels_
     #centroids = kmeans.cluster_centers_
@@ -95,6 +117,7 @@ task1_dataset['labels'] = labels
 clusters = list()
 for i in range(n_clusters):
     cluster = task1_dataset[task1_dataset['labels'] == i]
+    cluster = cluster.drop('labels', axis=1)
     clusters.append(cluster)
 
 x1 = task1_dataset['X2']
@@ -104,38 +127,7 @@ color = task1_dataset['labels'].apply(lambda x: 'r' if x == 0 else'b' if x == 1 
 plt.scatter(x1, y, c=color)
 plt.show()
 
-from .randomness.medians_method import get_medians_method_results
-
-for i, cluster in enumerate(clusters):
-    print(f"Кластер {i+1} (случайность):")
-    print(get_medians_method_results(cluster['X1']).is_random_series)
-    print(get_medians_method_results(cluster['X2']).is_random_series)
-    print(get_medians_method_results(cluster['X3']).is_random_series)
-    print(get_medians_method_results(cluster['X4']).is_random_series)
-    print(get_medians_method_results(cluster['X5']).is_random_series)
-    print(get_medians_method_results(cluster['Y']).is_random_series)
-
-for i, cluster in enumerate(clusters):
-    print(f"Кластер {i+1} (нормальное распределение):")
-    s, p = normaltest(cluster['X1'])
-    print(p > DEFAULT_ALPHA)
-    s, p = normaltest(cluster['X2'])
-    print(p > DEFAULT_ALPHA)
-    s, p = normaltest(cluster['X3'])
-    print(p > DEFAULT_ALPHA)
-    s, p = normaltest(cluster['X4'])
-    print(p > DEFAULT_ALPHA)
-    s, p = normaltest(cluster['X5'])
-    print(p > DEFAULT_ALPHA)
-    s, p = normaltest(cluster['Y'])
-    print(p > DEFAULT_ALPHA)
-
-from scipy.stats import median_test
-
-for factor in ['X1', 'X2', 'X3', 'X4', 'X5', 'Y']:
-    stat, p, med, tbl = median_test(*[clusters[i][factor] for i in range(len(clusters))])
-    print(f"Неоднородность {factor}: {p < DEFAULT_ALPHA}")
-
+"""
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import classification_report, confusion_matrix
@@ -169,7 +161,138 @@ plt.title('Матрица ошибок KNN-классификатора')
 plt.xlabel('Предсказанный кластер')
 plt.ylabel('Истинный кластер')
 plt.tight_layout()
-plt.show()
+plt.show()"""
+
+import scipy
+import scipy.stats
+
+# Кластер для оценки
+cluster = clusters[1]
+cluster_size = cluster.size
+
+test_all(cluster)
+
+import pingouin as pg
+
+print("Частные коэффициенты корреляции")
+print(pg.pcorr(cluster))
+
+cor_matrix = cluster.corr()
+d_matrix = cor_matrix.apply(lambda x: x**2)
+f_crit = scipy.stats.f.ppf(1-DEFAULT_ALPHA, 1, cluster_size-2)
+f_exp_matrix = d_matrix.apply(lambda x: (x/(1-x)) * (cluster_size-2))
+significance_matrix = f_exp_matrix.apply(lambda x: x > f_crit)
+
+print("Матрица с корреляцией: ")
+print(cor_matrix)
+print("Матрица с детерминацией: ")
+print(d_matrix)
+print("Матрица с F опытным: ")
+print(f_exp_matrix)
+print("Матрица со значимостью: ")
+print(significance_matrix)
+
+import itertools
+
+def get_valid_models(significance_matrix, target='Y'):
+    # Шаг 1: Получаем все признаки, значимые для Y
+    candidates = significance_matrix.index[significance_matrix[target]].tolist()
+    if target in candidates:
+        candidates.remove(target)  # исключаем саму Y, если попала
+
+    valid_models = []
+
+    # Шаг 2: Перебираем все возможные непустые подмножества кандидатов
+    for r in range(1, len(candidates) + 1):
+        for subset in itertools.combinations(candidates, r):
+            # Проверка: все признаки в subset незначимо связаны между собой
+            is_valid = True
+            for i in range(len(subset)):
+                for j in range(i + 1, len(subset)):
+                    if significance_matrix.loc[subset[i], subset[j]]:
+                        is_valid = False
+                        break
+                if not is_valid:
+                    break
+            if is_valid:
+                valid_models.append(list(subset))
+
+    return valid_models
+
+# Пример использования:
+models = get_valid_models(significance_matrix)
+for i, model_labels in enumerate(models, 1):
+    if len(model_labels) <= 1:
+        continue
+    model_labels.append('Y')
+    print(f"Модель {i}: {model_labels}")
+
+    model = cluster[model_labels]
+
+    # Пусть model — твой DataFrame, y_col — имя зависимой переменной
+    y_col = 'Y'
+    X_cols = [col for col in model.columns if col != y_col]
+
+    # Извлекаем данные как массивы
+    X = model[X_cols].values
+    y = model[y_col].values.reshape(-1, 1)  # превращаем в столбец-матрицу
+
+    # Добавляем константу (столбец единиц) для интерсепта
+    ones = np.ones((X.shape[0], 1))
+    X = np.hstack([ones, X])  # финальная X: [1 x1 x2 ...]
+
+    # Шаги по формуле МНК:
+    Xt = X.T                     # X^T
+    XtX = Xt @ X                 # X^T * X
+    XtX_inv = np.linalg.inv(XtX)  # (X^T * X)^(-1)
+    Xty = Xt @ y                 # X^T * y
+
+    beta_hat = XtX_inv @ Xty     # финальные коэффициенты
+
+    # Вывод
+    print("Оценённые коэффициенты (включая интерсепт):")
+    print(beta_hat)
+
+
+    from sklearn.metrics import r2_score
+    from sklearn.metrics import mean_absolute_error
+
+    # Предсказания: y_pred = X @ beta_hat
+    y_pred = X @ beta_hat  # (n_samples, 1)
+
+    # Плоские векторы для метрик (иначе ошибки)
+    y_true = y.ravel()
+    y_pred_flat = y_pred.ravel()
+
+    # R² и MAE:
+    r2 = r2_score(y_true, y_pred_flat)
+    mae = mean_absolute_error(y_true, y_pred_flat)
+
+    print(f"R^2: {r2:.4f}")
+    print(f"Mean Absolute Error: {mae:.4f}")
+
+    n = X.shape[0]         # количество наблюдений
+    p = X.shape[1] - 1     # количество признаков (без интерсепта)
+
+    r_adj = d_matrix.apply(lambda x: ((1 - x) * (n - 1)) / (n - p - 1))
+
+    print(f"Скорректированный R^2:")
+    print(r_adj)
+
+    n = X.shape[0]         # число наблюдений
+    k = X.shape[1]         # число коэффициентов (включая интерсепт)
+
+    # Остатки и RSS
+    residuals = y_true - y_pred_flat
+    RSS = np.sum(residuals ** 2)
+
+    # AIC и BIC
+    AIC = n * np.log(RSS / n) + 2 * k
+    BIC = n * np.log(RSS / n) + k * np.log(n)
+
+    print(f"AIC: {AIC:.2f}")
+    print(f"BIC: {BIC:.2f}")
+
 
 #outliers, all_vars = get_outliers_three_sigma(series, DEFAULT_ALPHA)
 
